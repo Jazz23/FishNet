@@ -1,5 +1,5 @@
 # Ignore everything:
-/Assets/*
+#/Assets/*
 !/Assets/FishNet
 !.gitignore
 
