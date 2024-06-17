@@ -6,50 +6,19 @@ namespace Prediction
 {
     public partial class PlayerController
     {
+        private InputActionMap _actionMap;
         private InputAction _lookAction;
         private InputAction _moveAction;
-        private Vector2 _lookDirection;
-        private Vector2 _moveDirection;
+        private InputAction _jumpAction;
 
-        private void SubscribeMovement()
+        private void SubscribeToActions()
         {
-            var actionMap = GetComponent<PlayerInput>().currentActionMap;
-            _moveAction = actionMap.FindAction("move");
-            _lookAction = actionMap.FindAction("look");
-            SubscribeAction(_moveAction, OnMove);
-            SubscribeAction(_lookAction, OnLook);
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
+            _jumpAction.started += OnJump;
         }
         
-        private void UnsubscribeMovement()
+        private void UnsubscribeToActions()
         {
-            UnsubscribeAction(_moveAction, OnMove);
-            UnsubscribeAction(_lookAction, OnLook);
-        }
-
-        private void SubscribeAction(InputAction action, Action<InputAction.CallbackContext> callback)
-        {
-            action.started += callback;
-            action.performed += callback;
-            action.canceled += callback;
-        }
-
-        private void UnsubscribeAction(InputAction action, Action<InputAction.CallbackContext> callback)
-        {
-            _moveAction.started -= callback;
-            _moveAction.performed -= callback;
-            _moveAction.canceled -= callback;
-        }
-
-        private void OnMove(InputAction.CallbackContext obj)
-        {
-            _moveDirection = obj.ReadValue<Vector2>();
-        }
-
-        private void OnLook(InputAction.CallbackContext obj)
-        {
-            _lookDirection = obj.ReadValue<Vector2>();
+            _jumpAction.started -= OnJump;
         }
     }
 }

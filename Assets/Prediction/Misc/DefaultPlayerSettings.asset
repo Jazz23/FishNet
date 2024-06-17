@@ -16,4 +16,4 @@ MonoBehaviour:
   sprintSpeed: 8
   jumpHeight: 5
   fallMultiplier: 20
-  lookSensitivity: 1
+  lookSensitivity: 0.05
