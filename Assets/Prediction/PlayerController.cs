@@ -4,45 +4,68 @@ using UnityEngine.InputSystem;
 
 namespace Prediction
 {
+    [RequireComponent(typeof(Rigidbody), typeof(PlayerInput))]
     public partial class PlayerController : NetworkBehaviour
     {
-        [SerializeField]
-        private float moveRate = 4f;
+        public PlayerStats currentPlayerSettings;
 
-        private Vector2 _moveDirection;
-        private InputAction _moveAction;
+        private Rigidbody _playerRb;
+        private Camera _camera;
         
         public override void OnStartClient()
         {
-            if (!IsOwner) return;
+            if (!IsOwner)
+            {
+                enabled = false;
+                return;
+            }
             
-            GetComponentInChildren<Camera>(true).gameObject.SetActive(true);
+            FindReferences();
+            _camera.gameObject.SetActive(true);
             SubscribeMovement();
         }
+
+        public override void OnStartServer() => enabled = false;
+
+        private void FindReferences()
+        {
+            _playerRb = GetComponent<Rigidbody>();
+            _camera = GetComponentInChildren<Camera>(true);
+        }
+
         public override void OnStopClient() => UnsubscribeMovement();
 
         private void Update()
         {
-            if (_moveDirection.magnitude > 0.01f)
-                Move(_moveDirection.x, _moveDirection.y);
+            if (_moveDirection.sqrMagnitude > 0.01f)
+                Move(_moveDirection);
+            if (_lookDirection.sqrMagnitude > 0.01f)
+                Look(_lookDirection);
         }
         
-        private void Move(float hor, float ver)
+        private void Move(Vector2 direction)
         {
-            float gravity = -10f * Time.deltaTime;
-            //If ray hits floor then cancel gravity.
-            Ray ray = new Ray(transform.position + new Vector3(0f, 0.05f, 0f), -Vector3.up);
-            if (Physics.Raycast(ray, 0.1f + -gravity))
-                gravity = 0f;
+            var (inputX, inputY) = direction;
+            // camera transform forward accurate movement after shooting but slows down when aiming at the ground,
+            // transform.forward is opposite of this issue, project on plane is just a fancy way of setting the y velocity to 0
+            var playerForward = Vector3.ProjectOnPlane(_camera.transform.forward, Vector3.up).normalized;
+            var playerRight = _camera.transform.right; // changed to camera.right instead of using transform .
+                                                           // right due to axis becoming missaligned with eachother for some reason
+        
+            var scaledMoveDirection = (playerRight * inputX + playerForward * inputY)
+                                      * currentPlayerSettings.moveSpeed;
+            var clampMovement = Vector3.ClampMagnitude(scaledMoveDirection, currentPlayerSettings.moveSpeed);
 
-            /* Moving. */
-            Vector3 direction = new Vector3(
-                0f,
-                gravity,
-                ver * moveRate * Time.deltaTime);
-
-            transform.position += transform.TransformDirection(direction);
-            transform.Rotate(new Vector3(0f, hor * 100f * Time.deltaTime, 0f));
+            _playerRb.MovePosition(transform.position + clampMovement * Time.deltaTime);
+        }
+        
+        private void Look(Vector2 lookDirection)
+        {
+            var (mouseInputX, mouseInputY) = lookDirection;
+            transform.Rotate(Vector3.up * (mouseInputX * currentPlayerSettings.lookSensitivity));
+        
+            // X AXIS
+            _camera.transform.Rotate(Vector3.right * (-mouseInputY * currentPlayerSettings.lookSensitivity));
         }
     }
 }
