@@ -1,4 +1,5 @@
-﻿using FishNet.Object;
+﻿using System;
+using FishNet.Object;
 using Newtonsoft.Json;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -50,13 +51,20 @@ namespace Prediction
         private void Update()
         {
             RaycastForGrounded();
-            
-            if (_moveAction.ReadValue<Vector2>() is { sqrMagnitude: > 0.01f } moveDir)
-                Move(moveDir);
-            if (_lookAction.ReadValue<Vector2>() is { sqrMagnitude: > 0.01f } lookDir)
-                Look(lookDir);
             if (!_isOnGround)
                 Fall();
+        }
+
+        private void FixedUpdate()
+        {
+            if (_moveAction.ReadValue<Vector2>() is { sqrMagnitude: > 0.01f } moveDir)
+                Move(moveDir);
+        }
+
+        private void LateUpdate()
+        {
+            if (_lookAction.ReadValue<Vector2>() is { sqrMagnitude: > 0.01f } lookDir)
+                Look(lookDir);
         }
 
         private void Fall()
@@ -119,7 +127,7 @@ namespace Prediction
         
         private Vector3[] GetColliderCorners() // drawing points along the bottem of the capsule collider at 4 corners 
         {
-            float offset = 0.2f;
+            float offset = 0.2f;//0.2f;
             Vector3 point1 = _playerMainCapsuleCollider.bounds.center + Vector3.down * (_playerMainCapsuleCollider.height * 0.5f - offset);
 
             Vector3[] corners = new Vector3[4];

@@ -252,7 +252,7 @@ MonoBehaviour:
   _addedNetworkObject: {fileID: 2133016699073331267}
   _networkObjectCache: {fileID: 2133016699073331267}
   currentPlayerSettings: {fileID: 11400000, guid: b7ae12681e27a85449e9098f27e88e81, type: 2}
-  jumpRayLength: 0
+  jumpRayLength: 0.5
 --- !u!114 &2133016699073331267
 MonoBehaviour:
   m_ObjectHideFlags: 0
