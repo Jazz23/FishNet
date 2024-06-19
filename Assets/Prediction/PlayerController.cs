@@ -16,6 +16,8 @@ namespace Prediction
         private Rigidbody _playerRb;
         private Camera _camera;
         private bool _isOnGround;
+        private bool _isSprinting;
+        private float _currentMoveSpeed;
         private CapsuleCollider _playerMainCapsuleCollider;
         
         public override void OnStartClient()
@@ -38,9 +40,6 @@ namespace Prediction
         private void FindReferences()
         {
             _actionMap = GetComponent<PlayerInput>().currentActionMap;
-            _moveAction = _actionMap.FindAction("move");
-            _lookAction = _actionMap.FindAction("look");
-            _jumpAction = _actionMap.FindAction("jump");
             _playerMainCapsuleCollider = GetComponentInChildren<CapsuleCollider>();
             _playerRb = GetComponent<Rigidbody>();
             _camera = GetComponentInChildren<Camera>(true);
@@ -51,6 +50,8 @@ namespace Prediction
         private void Update()
         {
             RaycastForGrounded();
+            UpdateCurrentMoveSpeed();
+            
             if (!_isOnGround)
                 Fall();
         }
@@ -58,7 +59,7 @@ namespace Prediction
         private void FixedUpdate()
         {
             if (_moveAction.ReadValue<Vector2>() is { sqrMagnitude: > 0.01f } moveDir)
-                Move(moveDir);
+                Move(moveDir, _currentMoveSpeed);
         }
 
         private void LateUpdate()
@@ -72,7 +73,7 @@ namespace Prediction
             _playerRb.AddForce(-Vector3.up * currentPlayerSettings.fallMultiplier, ForceMode.Force);
         }
 
-        private void Move(Vector2 direction)
+        private void Move(Vector2 direction, float moveSpeed)
         {
             var (inputX, inputY) = direction;
             // camera transform forward accurate movement after shooting but slows down when aiming at the ground,
@@ -82,8 +83,8 @@ namespace Prediction
                                                            // right due to axis becoming missaligned with eachother for some reason
         
             var scaledMoveDirection = (playerRight * inputX + playerForward * inputY)
-                                      * currentPlayerSettings.moveSpeed;
-            var clampMovement = Vector3.ClampMagnitude(scaledMoveDirection, currentPlayerSettings.moveSpeed);
+                                      * moveSpeed;
+            var clampMovement = Vector3.ClampMagnitude(scaledMoveDirection, moveSpeed);
 
             _playerRb.MovePosition(transform.position + clampMovement * Time.deltaTime);
         }
@@ -103,41 +104,15 @@ namespace Prediction
             
             _playerRb.velocity = _playerRb.velocity.WithY(currentPlayerSettings.jumpHeight);
         }
-        
-        //Raycast for grounded
-        private void RaycastForGrounded()
+
+        private void OnStartSprint(InputAction.CallbackContext obj)
         {
-            Vector3[] corners = GetColliderCorners();
-
-            foreach (Vector3 corner in corners)
-            {
-                Ray ray = new Ray(corner, -transform.up);
-
-                Debug.DrawRay(ray.origin, ray.direction * jumpRayLength, Color.red);
-
-                if (Physics.Raycast(ray, out RaycastHit hit, jumpRayLength)) // if one of the rays hits something then return is on ground, this ensures only 1 ray is drawn if something is being hit and draws more the second that one stops hitting
-                {
-                    _isOnGround = true;
-                    return;
-                }
-            }
-
-            _isOnGround = false; // if loop finishes with no rays hitting then set isonground to false
+            _isSprinting = true;
         }
-        
-        private Vector3[] GetColliderCorners() // drawing points along the bottem of the capsule collider at 4 corners 
+
+        private void OnStopSprint(InputAction.CallbackContext obj)
         {
-            float offset = 0.2f;//0.2f;
-            Vector3 point1 = _playerMainCapsuleCollider.bounds.center + Vector3.down * (_playerMainCapsuleCollider.height * 0.5f - offset);
-
-            Vector3[] corners = new Vector3[4];
-
-            corners[0] = point1 + Vector3.right * (_playerMainCapsuleCollider.radius * 0.5f);
-            corners[1] = point1 - Vector3.right * (_playerMainCapsuleCollider.radius * 0.5f);
-            corners[2] = point1 + Vector3.forward * (_playerMainCapsuleCollider.radius * 0.5f);
-            corners[3] = point1 - Vector3.forward * (_playerMainCapsuleCollider.radius * 0.5f);
-
-            return corners;
+            _isSprinting = false;
         }
     }
 }
