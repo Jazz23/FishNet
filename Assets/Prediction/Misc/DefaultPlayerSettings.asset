@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: DefaultPlayerSettings
   m_EditorClassIdentifier: 
   moveSpeed: 5
-  sprintSpeed: 8
+  sprintSpeed: 10
   jumpHeight: 5
   fallMultiplier: 20
   lookSensitivity: 0.05
